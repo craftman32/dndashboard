@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+    <title>The DnDashboard</title>
+  </head>
+
+  <style type="text/css">
+  div {
+    padding: 10px;
+  }
+  </style>
+  <body>
+    <h1>
+      The DnDashboard
+    </h1>
+    <div id="characterList"></div>
+    <div id="initiativeList">
+      <h2>Initiative List</h2>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+      $(function () {
+        var socket = io();
+
+        socket.on('addCharacter', function(character){
+          var row = '<div id="character' + character.id + '">';
+          delete character.id;
+
+          for (var field in character) {
+            row += ' <strong>' + field + ':</strong> <span class="' + field + '">' + character[field] + '</span>';
+          }
+
+          $('#characterList').append(row);
+        });
+
+        socket.on('updateCharacter', function(character){
+          var row = $('#character' + character.id);
+          delete character.id;
+          for (var field in character) {
+            row.find('.' + field).html(character[field]);
+          }
+        });
+
+        socket.on('updateInitiative', function(characterList){
+          $('#initiativeList').html('');
+          $.each(characterList, function(i, character) {
+            $('#initiativeList').append('<p>Name: ' + character.name + ' INIT: ' + character.init + '</p>');
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

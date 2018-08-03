@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+  <head>
+    <title>The DnDashboard - Admin</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script type="text/javascript">
+    var id = 0;
+    var socket = io();
+    var characterList = [];
+
+    function addCharacter(character) {
+      var row = '<div data-id="' + character.id + '" class="character">';
+      console.log(character);
+
+      for (var field in character) {
+        row += '<strong>' + field + ':</strong> <input class="' + field + '" value="' + character[field] + '" />';
+      }
+
+      row += '<button type="button" class="update">Update</button>'
+      row += '</div>';
+
+      $('#characterList').append(row);
+    }
+
+    $(document).on('submit', '#addCharacterForm', function() {
+      var characterFields = ['name', 'hp', 'bab', 'speed', 'cmb', 'fort', 'ref', 'will', 'init'];
+      var character = {id: id};
+
+      for (var i = 0; i < characterFields.length; i ++) {
+        character[characterFields[i]] = $('#' + characterFields[i]).val();
+        $('#' + characterFields[i]).val('');
+      }
+
+      // Emit the character.
+      characterList.push(character);
+      socket.emit('addCharacter', character);
+
+      addCharacter(character);
+
+      $('#name, #hp, #bab').val('');
+      id ++;
+      return false;
+    });
+
+    $(document).on('click', '.update', function() {
+      var selectedId = $(this).parent().data('id');
+
+      var characterFields = ['name', 'hp', 'bab', 'speed', 'cmb', 'fort', 'ref', 'will', 'init'];
+      var character = {id: selectedId};
+
+      for (var i = 0; i < characterFields.length; i ++) {
+        character[characterFields[i]] = $(this).parent().find('.' + characterFields[i]).val()
+      }
+
+      characterList = characterList.map(function(item) {
+        if (item.id === character.id) {
+          return character;
+        } else {
+          return item;
+        }
+      });
+
+      // Emit the character.
+      socket.emit('updateCharacter', character);
+    });
+
+    $(document).on('click', '#updateInitiative', function() {
+      // Select all init values
+      characterList.sort(function(a, b) {
+        if (a.init < b.init)
+          return -1;
+        if (a.init > b.init)
+          return 1;
+        return 0;
+      });
+      socket.emit('updateInitiative', characterList);
+
+      $('#initiativeList').html('');
+      $.each(characterList, function(i, character) {
+        $('#initiativeList').append('<p>Name: ' + character.name + ' INIT: ' + character.init + '</p>');
+      });
+    });
+    </script>
+
+    <style type="text/css">
+    input {
+      width: 60px;
+    }
+    </style>
+  </head>
+  <body>
+    <form action="" id="addCharacterForm">
+      Name: <input id="name" autocomplete="off" />
+      HP: <input id="hp" autocomplete="off" />
+      BAB: <input id="bab" autocomplete="off" />
+      Speed: <input id="speed" autocomplete="off" />
+      CMB: <input id="cmb" autocomplete="off" />
+      FORT: <input id="fort" autocomplete="off" />
+      REF: <input id="ref" autocomplete="off" />
+      WILL: <input id="will" autocomplete="off" />
+      INIT: <input id="init" autocomplete="off" />
+      <button>Add Character</button>
+    </form>
+    <div style="display: flex: justify-content: space-between;">
+      <div id="characterArea">
+        <h2>Character List</h2>
+        <div id="characterList">
+        </div>
+      </div>
+      <div id="initiativeArea">
+        <h2>Initiative List</h2>
+        <button type="button" id="updateInitiative">
+          Update Initiative List
+        </button>
+        <div id="initiativeList"></div>
+      </div>
+    </div>
+  </body>
+</html>
